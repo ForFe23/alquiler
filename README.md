@@ -1,81 +1,92 @@
-# 🏥 Clinica2 - Base de Datos de Prueba
+🏥 Clinica2 — Base de Datos de Prueba para Gestión Clínica
 
-Esta base de datos **`clinica2`** fue creada para pruebas de gestión clínica y análisis de datos. Contiene información de usuarios, optometristas, pacientes y sus historias clínicas, generada de manera **masiva, coherente y randomizada**.
+Clinica2 es una base de datos relacional diseñada para pruebas, análisis y desarrollo de aplicaciones clínicas.
+Contiene información totalmente simulada, generada de forma masiva, coherente y aleatoria, ideal para testing técnico y analítico.
 
-> ⚠️ Todos los datos son **simulados** y no representan personas reales.
+⚠️ Aviso importante:
+Todos los datos son ficticios. No representan personas reales ni información médica real.
+No usar en producción.
 
----
+📌 Características Principales
 
-## 📂 1. Estructura de la Base de Datos
+✅ Datos clínicos coherentes (usuarios, pacientes, historias clínicas)
 
-| Tabla | Descripción |
-|-------|-------------|
-| `sv_rol` | Roles de usuario: `Administrador`, `Optometrista`, `Secretaria`. |
-| `sv_usuarios` | Usuarios del sistema, vinculados a un rol. |
-| `sv_optometrista` | Información de optometristas vinculados a un usuario. |
-| `sv_paciente` | Pacientes con datos personales y motivo de consulta. |
-| `sv_historia_clinica` | Historias clínicas vinculadas a pacientes y optometristas. |
-| `stg_nombres_raw` | Tabla temporal para importar CSV inicial con nombres sucios. |
-| `stg_nombres_limpios` | Tabla temporal con nombres y apellidos depurados. |
+🎲 Generación masiva y randomizada
 
----
+🧹 Limpieza automática de nombres y apellidos
 
-## 🧹 2. Limpieza y Preparación de Datos
+🧠 Relaciones realistas entre entidades
 
-### 2.1 Importación del CSV
+🐳 Compatible con PostgreSQL + Docker
 
-Se importó un CSV con nombres, apellidos y cédulas a `stg_nombres_raw`.  
-Luego se migró a `stg_nombres_limpios` para limpieza:
+📊 Ideal para BI, dashboards, pruebas de performance y QA
 
-```sql
+🧱 Estructura de la Base de Datos
+Tabla	Descripción
+sv_rol	Roles del sistema (Administrador, Optometrista, Secretaria)
+sv_usuarios	Usuarios del sistema, asociados a un rol
+sv_optometrista	Información de optometristas vinculados a usuarios
+sv_paciente	Pacientes con datos personales y motivo de consulta
+sv_historia_clinica	Historias clínicas por paciente y optometrista
+stg_nombres_raw	Tabla staging para importar CSV con datos “sucios”
+stg_nombres_limpios	Tabla staging con nombres y apellidos depurados
+🧹 Limpieza y Preparación de Datos
+1️⃣ Importación inicial desde CSV
+
+Los datos crudos se cargan en stg_nombres_raw y luego se copian a una tabla limpia:
+
 INSERT INTO stg_nombres_limpios(nombre, apellido)
 SELECT nombre, apellido
 FROM stg_nombres_raw;
-2.2 Limpieza de apellidos
-Se eliminaron números y caracteres extraños:
 
-sql
-Copiar código
+2️⃣ Limpieza de apellidos
+
+Se eliminan números y caracteres especiales
+
+Se asigna un apellido genérico si queda vacío
+
 UPDATE stg_nombres_limpios
 SET apellido = REGEXP_REPLACE(apellido, '[^A-Za-zÁÉÍÓÚÑáéíóúñ]+', '', 'g')
 WHERE apellido IS NOT NULL;
-Si queda vacío, se asigna un apellido genérico:
 
-sql
-Copiar código
 UPDATE stg_nombres_limpios
 SET apellido = 'Apellido'
 WHERE apellido IS NULL OR apellido = '';
-🎲 3. Generación de Datos Coherentes y Randomizados
-3.1 Roles iniciales
-sql
-Copiar código
+
+🎲 Generación de Datos Simulados
+3️⃣ Roles del sistema
 INSERT INTO sv_rol(nombre_rol)
 VALUES ('Administrador'), ('Optometrista'), ('Secretaria')
 ON CONFLICT DO NOTHING;
-3.2 Usuarios y Optometristas
-Se crean usuarios tipo Optometrista y se vinculan a optometristas.
 
-Correos, cédulas y nombres se generan de forma única y coherente.
+4️⃣ Usuarios y Optometristas
 
-3.3 Pacientes
-Se generaron 2000 pacientes con:
+Usuarios tipo Optometrista
 
-Edad aleatoria 1–90 años
+Correos, cédulas y nombres únicos
 
-Teléfonos y direcciones simuladas
+Relación 1:1 usuario ↔ optometrista
 
-Motivos de consulta variados: Consulta General, Dolor ocular, Revisión de visión, Lentes nuevos
+5️⃣ Pacientes (2000 registros)
 
-Sexo aleatorio M o F
+Cada paciente incluye:
 
-Fechas de registro random entre 2010 y 2025
+Edad: 1–90 años
 
-sql
-Copiar código
-INSERT INTO sv_paciente(tbl_nombre, tbl_apellido, tbl_cedula,
-                        tbl_fecha_nac, tbl_direccion, tbl_telefono,
-                        tbl_correo, tbl_motivo_consulta, tbl_fecha_registro, tbl_sexo)
+Sexo: M / F
+
+Teléfono y dirección simulados
+
+Motivo de consulta aleatorio
+
+Fecha de registro entre 2010 y 2025
+
+INSERT INTO sv_paciente(
+    tbl_nombre, tbl_apellido, tbl_cedula,
+    tbl_fecha_nac, tbl_direccion, tbl_telefono,
+    tbl_correo, tbl_motivo_consulta,
+    tbl_fecha_registro, tbl_sexo
+)
 SELECT
     nombre,
     COALESCE(apellido,'Apellido') || floor(random()*9999)::text,
@@ -90,17 +101,17 @@ SELECT
 FROM stg_nombres_limpios
 ORDER BY random()
 LIMIT 2000;
-3.4 Historias Clínicas
-Cada paciente tiene 1–5 historias clínicas
 
-Cada historia está vinculada a un optometrista random
+6️⃣ Historias Clínicas
 
-Fechas de consulta coherentes entre 2010 y 2025
+Cada paciente tiene 1 a 5 historias clínicas
 
-Antecedentes, diagnósticos y notas aleatorias
+Optometrista asignado aleatoriamente
 
-sql
-Copiar código
+Fechas coherentes entre 2010 y 2025
+
+Diagnósticos y notas simuladas
+
 DO $$
 DECLARE
     v_paciente RECORD;
@@ -111,14 +122,21 @@ BEGIN
     FOR v_paciente IN SELECT id_paciente FROM sv_paciente LOOP
         v_num_hist := floor(random()*5 + 1);
         FOR i IN 1..v_num_hist LOOP
-            SELECT id_optometrista INTO v_optometrista_id
+            SELECT id_optometrista
+            INTO v_optometrista_id
             FROM sv_optometrista
             ORDER BY random()
             LIMIT 1;
 
             INSERT INTO sv_historia_clinica(
-                id_paciente, tbl_antecedente, tbl_diagnostico, tbl_notas_clinica, tbl_fecha, id_optometrista
-            ) VALUES (
+                id_paciente,
+                tbl_antecedente,
+                tbl_diagnostico,
+                tbl_notas_clinica,
+                tbl_fecha,
+                id_optometrista
+            )
+            VALUES (
                 v_paciente.id_paciente,
                 (ARRAY['Ninguno','Hipertensión','Diabetes','Alergias Oculares'])[floor(random()*4)+1],
                 (ARRAY['Miopía','Hipermetropía','Astigmatismo','Presbicia'])[floor(random()*4)+1],
@@ -129,39 +147,60 @@ BEGIN
         END LOOP;
     END LOOP;
 END $$;
-✅ 4. Verificaciones
-sql
-Copiar código
--- Conteo total de historias clínicas
-SELECT COUNT(*) AS total_historia_clinica FROM sv_historia_clinica;
+
+✅ Verificaciones Rápidas
+-- Total de historias clínicas
+SELECT COUNT(*) FROM sv_historia_clinica;
 
 -- Pacientes con al menos una historia
-SELECT COUNT(DISTINCT id_paciente) AS pacientes_con_historia 
+SELECT COUNT(DISTINCT id_paciente)
 FROM sv_historia_clinica;
 
--- Fechas mínimas y máximas de consultas
-SELECT MIN(tbl_fecha) AS primera_consulta, MAX(tbl_fecha) AS ultima_consulta
+-- Rango de fechas de consulta
+SELECT MIN(tbl_fecha), MAX(tbl_fecha)
 FROM sv_historia_clinica;
-🐳 5. Uso con Docker
-bash
-Copiar código
-# Entrar al contenedor
+
+🐳 Uso con Docker
+# Entrar al contenedor PostgreSQL
 docker exec -it postgres_grupo psql -U grupo -d postgres
 
-# Usar esquema clinica2
+# Usar el esquema
 SET search_path TO clinica2, public;
 
-# Ejecutar scripts SQL
+# Ejecutar script
 \i /ruta/al/script_generacion.sql
-💡 6. Consideraciones
-Los datos son simulados y no deben usarse en producción real.
 
-Ideal para:
+💡 Casos de Uso
 
-Pruebas de performance
+Este proyecto es ideal para:
 
-Dashboards
+🧪 Pruebas de performance (SQL / índices)
 
-Testing de aplicaciones clínicas
+📊 Dashboards BI (Power BI, Metabase, Superset)
 
-Escalable: se pueden generar más pacientes, optometristas e historias cambiando los límites en los bucles PL/pgSQL.
+🧠 Análisis de datos clínicos
+
+🧩 Testing de ERPs o sistemas médicos
+
+🧬 Pruebas de integridad y relaciones
+
+📈 Escalabilidad
+
+Puedes ajustar fácilmente:
+
+Número de pacientes
+
+Número de optometristas
+
+Cantidad de historias clínicas por paciente
+
+Rango de fechas
+
+Catálogos de diagnósticos y antecedentes
+
+Todo controlado desde los límites de los bucles y arrays en los scripts SQL.
+
+📄 Licencia
+
+Este proyecto se distribuye solo para fines educativos y de prueba.
+El autor no se responsabiliza por usos indebidos de los datos generados.
